@@ -18,6 +18,9 @@ run-name: Build ${{ inputs.variant }}-${{ inputs.firmware_branch }}
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      FIRMWARE_ARCHIVE: firmware-${{ inputs.variant }}-${{ inputs.firmware_branch }}.tar.xz
     
     steps:
       - uses: actions/cache@v5
@@ -56,9 +59,14 @@ jobs:
         run: |
           pio run -e ${{ inputs.variant }}
       
-      - name: Upload firmware artifacts
+      - name: Create firmware archive
+        run: |
+          cd firmware/.pio/build/${{ inputs.variant }}
+          tar -cJf ${{ env.FIRMWARE_ARCHIVE }} *.bin
+
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v6
         with:
-          name: firmware-${{ inputs.variant }}-${{ inputs.firmware_branch }}
-          path: firmware/.pio/build/${{ inputs.variant }}/*.bin
+          name: ${{ env.FIRMWARE_ARCHIVE }}
+          path: firmware/.pio/build/${{ inputs.variant }}/${{ env.FIRMWARE_ARCHIVE }}
           if-no-files-found: error
