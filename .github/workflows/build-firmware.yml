@@ -62,4 +62,5 @@ jobs:
         with:
           name: ${{ env.FIRMWARE_ARCHIVE }}
           path: firmware/.pio/build/${{ inputs.variant }}/${{ env.FIRMWARE_ARCHIVE }}
+          compression-level: 0
           if-no-files-found: error
