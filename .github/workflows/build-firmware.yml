@@ -55,7 +55,7 @@ jobs:
       - name: Create firmware archive
         run: |
           cd firmware/.pio/build/${{ inputs.variant }}
-          tar -cJf ${{ env.FIRMWARE_ARCHIVE }} *.bin *.uf2
+          tar -cJf ${{ env.FIRMWARE_ARCHIVE }} --ignore-failed-read *.bin *.uf2
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v7
