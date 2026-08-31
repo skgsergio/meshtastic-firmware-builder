@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout this repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           path: builder
 
       - name: Checkout meshtastic/firmware
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: meshtastic/firmware
           ref: ${{ inputs.firmware_branch }}
@@ -40,7 +40,7 @@ jobs:
         run: cp -r builder/variants/* firmware/variants/
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
