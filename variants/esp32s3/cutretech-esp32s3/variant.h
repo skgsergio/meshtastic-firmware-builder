@@ -7,12 +7,13 @@
 #define I2C_SDA 47
 #define I2C_SCL 48
 
-#define LED_PIN 21
+#define LED_POWER 21
 #define LED_STATE_ON 1
 
 #define BATTERY_PIN 1
 #define ADC_MULTIPLIER 2.0 // Adjust in configuration if needed, in my case ~2.025
-#define ADC_CHANNEL ADC1_GPIO1_CHANNEL
+#define ADC_CHANNEL ADC_CHANNEL_0
+#define BATTERY_SENSE_RESOLUTION_BITS 12
 
 #define USE_SX1262 // E22-900, E22P-868, E22P-915 series
 #define USE_SX1268 // E22-400 series
