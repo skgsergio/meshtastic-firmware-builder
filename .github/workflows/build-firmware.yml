@@ -17,59 +17,59 @@ run-name: Build ${{ inputs.variant }}-${{ inputs.firmware_branch }}
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Sanitize inputs
         run: |
           FIRMWARE_BRANCH="$(echo "${{ inputs.firmware_branch }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
           VARIANT="$(echo "${{ inputs.variant }}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          FIRMWARE_ARCHIVE="firmware-${VARIANT}-${FIRMWARE_BRANCH}.tar.xz"
 
           echo "FIRMWARE_BRANCH=${FIRMWARE_BRANCH}" >> "$GITHUB_ENV"
           echo "VARIANT=${VARIANT}" >> "$GITHUB_ENV"
-          echo "FIRMWARE_ARCHIVE=${FIRMWARE_ARCHIVE}" >> "$GITHUB_ENV"
-
-      - name: Checkout this repository
-        uses: actions/checkout@v7
-        with:
-          path: builder
 
       - name: Checkout meshtastic/firmware
         uses: actions/checkout@v7
         with:
           repository: meshtastic/firmware
           ref: ${{ env.FIRMWARE_BRANCH }}
-          path: firmware
           submodules: recursive
 
-      - name: Copy variants folder
-        run: cp -r builder/variants/* firmware/variants/
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - name: Checkout this repository
+        uses: actions/checkout@v7
         with:
-          python-version: "3.14"
+          path: ${{ github.event.repository.name }}
 
-      - name: Install PlatformIO
-        run: pip install --upgrade platformio
+      - name: Copy variants and resolve build info
+        run: |
+          cp -r "${GITHUB_REPOSITORY#*/}"/variants/* variants/
+          VARIANT_DIR="$(find variants -mindepth 2 -maxdepth 2 -type d -name "${VARIANT}" | head -n1)"
+          [ -n "${VARIANT_DIR}" ] || { echo "::error::Variant ${VARIANT} not found"; exit 1; }
+          PIO_PLATFORM="$(basename "$(dirname "${VARIANT_DIR}")")"
+          VERSION="$(./bin/buildinfo.py long)"
+
+          echo "PIO_PLATFORM=${PIO_PLATFORM}" >> "$GITHUB_ENV"
+          echo "FIRMWARE_ARCHIVE=firmware-${PIO_PLATFORM}-${VARIANT}-${VERSION}.tar.xz" >> "$GITHUB_ENV"
 
       - name: Build firmware
-        working-directory: firmware
-        run:  pio run -e "${VARIANT}" --disable-auto-clean
-
+        id: build
+        uses: meshtastic/gh-action-firmware@main
+        with:
+          pio_platform: ${{ env.PIO_PLATFORM }}
+          pio_env: ${{ env.VARIANT }}
+          pio_target: build
 
       - name: Create firmware archive
+        working-directory: release
         run: |
-          cd firmware/.pio/build/"${VARIANT}"
           shopt -s nullglob
-          files=(*.bin *.uf2)
-          tar -cJf "${FIRMWARE_ARCHIVE}" "${files[@]}"
+          files=(*.mt.json *.bin *.elf *.ld *.map *.uf2 *.hex *.zip)
+          tar -cJf "${GITHUB_WORKSPACE}/${FIRMWARE_ARCHIVE}" "${files[@]}"
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.FIRMWARE_ARCHIVE }}
-          path: firmware/.pio/build/${{ env.VARIANT }}/${{ env.FIRMWARE_ARCHIVE }}
+          path: ${{ env.FIRMWARE_ARCHIVE }}
           archive: false
           if-no-files-found: error
